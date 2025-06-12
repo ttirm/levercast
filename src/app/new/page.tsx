@@ -4,10 +4,33 @@ import { MainLayout } from "@/components/main-layout"
 import { useState, useEffect } from "react"
 import { ImagePlus, Send } from "lucide-react"
 
+// Mock templates data
+const mockTemplates = [
+  {
+    id: 1,
+    name: "Product Launch",
+    description: "Perfect for announcing new products or features",
+    content: "🎉 Exciting news! We're thrilled to announce our latest [product/feature] that will revolutionize [industry/problem].\n\nKey benefits:\n• [Benefit 1]\n• [Benefit 2]\n• [Benefit 3]\n\nLearn more: [link]"
+  },
+  {
+    id: 2,
+    name: "Industry Insights",
+    description: "Share your expertise and thought leadership",
+    content: "💡 Industry Insight: [Topic]\n\nIn today's rapidly evolving [industry], [observation/trend]. Here's why this matters:\n\n1. [Point 1]\n2. [Point 2]\n3. [Point 3]\n\nWhat are your thoughts on this? Let's discuss in the comments!"
+  },
+  {
+    id: 3,
+    name: "Event Promotion",
+    description: "Promote webinars, conferences, or meetups",
+    content: "📅 Save the date! Join us for [Event Name] on [Date]\n\nWhat to expect:\n• [Highlight 1]\n• [Highlight 2]\n• [Highlight 3]\n\nRegister now: [link]\n\n#EventHashtag #IndustryHashtag"
+  }
+]
+
 export default function NewPost() {
   const [content, setContent] = useState("")
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null)
 
   useEffect(() => {
     if (image) {
@@ -23,6 +46,15 @@ export default function NewPost() {
     }
   }
 
+  const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const templateId = parseInt(e.target.value)
+    setSelectedTemplate(templateId)
+    const template = mockTemplates.find(t => t.id === templateId)
+    if (template) {
+      setContent(template.content)
+    }
+  }
+
   return (
     <MainLayout>
       <div className="max-w-6xl mx-auto">
@@ -32,6 +64,26 @@ export default function NewPost() {
           {/* Content Creation Panel */}
           <div className="space-y-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
+              {/* Template Selector */}
+              <div className="mb-4">
+                <label htmlFor="template" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Select Template
+                </label>
+                <select
+                  id="template"
+                  value={selectedTemplate || ""}
+                  onChange={handleTemplateChange}
+                  className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 [&>option]:bg-gray-800 [&>option]:text-white"
+                >
+                  <option value="">Choose a template...</option>
+                  {mockTemplates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name} - {template.description}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
