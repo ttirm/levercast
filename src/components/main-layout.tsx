@@ -17,8 +17,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen bg-gray-100 dark:bg-gray-950">
       <Sidebar />
       
-      <div className="flex-1 flex flex-col">
-        <header className="h-16 border-b border-gray-200 dark:border-gray-800 flex items-center justify-end px-4">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="h-16 border-b border-gray-200 dark:border-gray-800 flex items-center justify-end px-6">
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800"

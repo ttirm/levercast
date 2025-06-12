@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 export default function TemplatesPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -22,6 +23,7 @@ export default function TemplatesPage() {
     description: '',
     content: ''
   });
+  const { toast } = useToast();
 
   // Simulate loading
   useEffect(() => {
@@ -62,6 +64,11 @@ export default function TemplatesPage() {
     setTemplates([template, ...templates]);
     setNewTemplate({ name: '', description: '', content: '' });
     setIsCreateDialogOpen(false);
+
+    toast({
+      title: "Template Created",
+      description: `"${template.name}" has been created successfully.`,
+    });
   };
 
   return (

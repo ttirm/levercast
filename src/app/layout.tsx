@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Navigation } from "@/components/Navigation";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Levercast",
-  description: "Effortlessly capture, format, and share your content ideas across multiple social media platforms.",
+  description: "Social media content management platform",
 };
 
 export default function RootLayout({
@@ -25,13 +25,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="min-h-screen flex flex-col">
-            <Navigation />
-            <main className="flex-1 container mx-auto py-6">
-              {children}
-            </main>
-          </div>
+          {children}
         </ThemeProvider>
+        <Toaster />
       </body>
     </html>
   );

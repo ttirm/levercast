@@ -25,7 +25,7 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <div className={`flex flex-col h-screen bg-gray-900 text-white transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`}>
+    <div className={`flex flex-col h-full bg-gray-900 text-white transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'} border-r border-gray-800`}>
       <div className="flex items-center justify-between p-4">
         {!collapsed && <h1 className="text-xl font-bold">Levercast</h1>}
         <button
