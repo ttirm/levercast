@@ -1,36 +1,83 @@
-import { MainLayout } from "@/components/main-layout"
+import { mockProjects, mockTasks } from '@/lib/mock-data';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function Home() {
+  const activeProjects = mockProjects.filter(p => p.status === 'active').length;
+  const completedTasks = mockTasks.filter(t => t.status === 'completed').length;
+  const inProgressTasks = mockTasks.filter(t => t.status === 'in-progress').length;
+
   return (
-    <MainLayout>
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-6 dark:text-white">
-          Welcome to Levercast
-        </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-          Effortlessly capture, format, and share your content ideas across multiple social media platforms.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-            <h2 className="text-xl font-semibold mb-4 dark:text-white">Quick Start</h2>
-            <ul className="space-y-2 text-gray-600 dark:text-gray-300">
-              <li>• Click "New Post" to create content</li>
-              <li>• Use templates to format your posts</li>
-              <li>• Preview how your content will look</li>
-              <li>• Publish to multiple platforms</li>
-            </ul>
-          </div>
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-            <h2 className="text-xl font-semibold mb-4 dark:text-white">Features</h2>
-            <ul className="space-y-2 text-gray-600 dark:text-gray-300">
-              <li>• Multi-platform content creation</li>
-              <li>• Smart templates powered by AI</li>
-              <li>• Real-time previews</li>
-              <li>• One-click publishing</li>
-            </ul>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">Dashboard</h1>
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{activeProjects}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completed Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{completedTasks}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">In Progress Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{inProgressTasks}</div>
+          </CardContent>
+        </Card>
       </div>
-    </MainLayout>
-  )
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Projects</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {mockProjects.slice(0, 3).map((project) => (
+                <div key={project.id} className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{project.name}</p>
+                    <p className="text-sm text-muted-foreground">{project.description}</p>
+                  </div>
+                  <span className="text-sm text-muted-foreground">{project.status}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {mockTasks.slice(0, 3).map((task) => (
+                <div key={task.id} className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{task.title}</p>
+                    <p className="text-sm text-muted-foreground">{task.description}</p>
+                  </div>
+                  <span className="text-sm text-muted-foreground">{task.status}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 }
