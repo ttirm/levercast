@@ -1,6 +1,7 @@
 ---
-description: Rules for the creation and refactoring of components
-globs: 
+description: 
+globs: /
+alwaysApply: false
 ---
 # Misc
 
