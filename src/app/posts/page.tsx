@@ -2,6 +2,8 @@
 
 import { MainLayout } from "@/components/main-layout"
 import { Clock, CheckCircle2, FileText, Image as ImageIcon } from "lucide-react"
+import { mockPosts } from '@/lib/mockData';
+import { PostCard } from '@/components/PostCard';
 
 // Mock data for posts
 const mockPosts = [
@@ -43,56 +45,19 @@ const statusIcons = {
   pending: Clock
 }
 
-export default function RecentPosts() {
+export default function PostsPage() {
   return (
-    <MainLayout>
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6 dark:text-white">Recent Posts</h1>
-        
-        <div className="space-y-4">
-          {mockPosts.map((post) => {
-            const StatusIcon = statusIcons[post.status as keyof typeof statusIcons]
-            return (
-              <div
-                key={post.id}
-                className="bg-white dark:bg-gray-800 rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-gray-700 dark:text-gray-300 mb-2">
-                      {post.content}
-                    </p>
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center gap-2">
-                        <StatusIcon className="w-4 h-4" />
-                        <span className={`px-2 py-1 rounded-full ${statusColors[post.status as keyof typeof statusColors]}`}>
-                          {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                        {post.platforms.map((platform) => (
-                          <span key={platform} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
-                            {platform}
-                          </span>
-                        ))}
-                      </div>
-                      {post.image && (
-                        <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                          <ImageIcon className="w-4 h-4" />
-                          <span>Has image</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(post.date).toISOString().split('T')[0]}
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Posts</h1>
+        <p className="text-muted-foreground">Manage your content posts</p>
       </div>
-    </MainLayout>
-  )
+      
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {mockPosts.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
+      </div>
+    </div>
+  );
 } 
