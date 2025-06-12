@@ -47,11 +47,11 @@ export function PostCard({ post, onEdit, onDelete, onView }: PostCardProps) {
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow bg-white dark:bg-gray-800">
       <CardHeader>
         <div className="flex justify-between items-start">
-          <CardTitle className="text-xl">{post.title}</CardTitle>
-          <Badge variant={post.status === 'published' ? 'default' : 'secondary'}>
+          <CardTitle className="text-xl dark:text-white">{post.title}</CardTitle>
+          <Badge variant={post.status === 'published' ? 'default' : 'secondary'} className={post.status === 'published' ? 'bg-yellow-500 text-gray-900' : ''}>
             {post.status}
           </Badge>
         </div>
@@ -69,6 +69,7 @@ export function PostCard({ post, onEdit, onDelete, onView }: PostCardProps) {
             size="icon"
             onClick={() => handleAction('view')}
             disabled={isLoading}
+            className="hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <Eye className="h-4 w-4" />
           </Button>
@@ -77,6 +78,7 @@ export function PostCard({ post, onEdit, onDelete, onView }: PostCardProps) {
             size="icon"
             onClick={() => handleAction('edit')}
             disabled={isLoading}
+            className="hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <Edit className="h-4 w-4" />
           </Button>
@@ -85,7 +87,7 @@ export function PostCard({ post, onEdit, onDelete, onView }: PostCardProps) {
             size="icon"
             onClick={() => handleAction('delete')}
             disabled={isLoading}
-            className="text-destructive hover:text-destructive"
+            className="text-destructive hover:text-destructive hover:bg-red-100 dark:hover:bg-red-900/20"
           >
             <Trash2 className="h-4 w-4" />
           </Button>

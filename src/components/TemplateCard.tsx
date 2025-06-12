@@ -49,13 +49,13 @@ export function TemplateCard({ template, onEdit, onDelete, onCopy }: TemplateCar
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow bg-white dark:bg-gray-800">
       <CardHeader>
-        <CardTitle>{template.name}</CardTitle>
+        <CardTitle className="dark:text-white">{template.name}</CardTitle>
         <CardDescription>{template.description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <pre className="text-sm text-muted-foreground bg-muted p-2 rounded-md overflow-x-auto">
+        <pre className="text-sm text-muted-foreground bg-gray-100 dark:bg-gray-900 p-2 rounded-md overflow-x-auto">
           {template.content}
         </pre>
       </CardContent>
@@ -70,6 +70,7 @@ export function TemplateCard({ template, onEdit, onDelete, onCopy }: TemplateCar
             onClick={() => handleAction('copy')}
             disabled={isLoading}
             title={copied ? "Copied!" : "Copy template"}
+            className="hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <Copy className="h-4 w-4" />
           </Button>
@@ -78,6 +79,7 @@ export function TemplateCard({ template, onEdit, onDelete, onCopy }: TemplateCar
             size="icon"
             onClick={() => handleAction('edit')}
             disabled={isLoading}
+            className="hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <Edit className="h-4 w-4" />
           </Button>
@@ -86,7 +88,7 @@ export function TemplateCard({ template, onEdit, onDelete, onCopy }: TemplateCar
             size="icon"
             onClick={() => handleAction('delete')}
             disabled={isLoading}
-            className="text-destructive hover:text-destructive"
+            className="text-destructive hover:text-destructive hover:bg-red-100 dark:hover:bg-red-900/20"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
