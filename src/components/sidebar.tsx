@@ -12,6 +12,7 @@ import {
   ChevronRight,
   User
 } from "lucide-react"
+import { UserButton, SignInButton, SignUpButton, SignedIn, SignedOut } from "@clerk/nextjs"
 
 const navigation = [
   { name: "New Post", href: "/new", icon: FileText },
@@ -57,10 +58,42 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-gray-800">
-        <button className="flex items-center w-full px-2 py-2 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white">
-          <User className="w-6 h-6" />
-          {!collapsed && <span className="ml-3">Profile</span>}
-        </button>
+        <SignedIn>
+          <div className="flex items-center">
+            <UserButton 
+              afterSignOutUrl="/"
+              appearance={{
+                elements: {
+                  userButtonBox: "flex items-center w-full",
+                  userButtonTrigger: "flex items-center w-full px-2 py-2 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white",
+                  userButtonAvatarBox: "w-6 h-6",
+                  userButtonPopoverCard: "bg-gray-900 border border-gray-800",
+                  userButtonPopoverActionButton: "text-gray-300 hover:bg-gray-800 hover:text-white",
+                  userButtonPopoverActionButtonText: "text-gray-300",
+                  userButtonPopoverFooter: "border-t border-gray-800"
+                }
+              }}
+            />
+            {!collapsed && <span className="ml-3 text-gray-300">Profile</span>}
+          </div>
+        </SignedIn>
+        <SignedOut>
+          <div className="flex flex-col gap-2">
+            <SignInButton mode="modal">
+              <button className="flex items-center w-full px-2 py-2 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white">
+                <User className="w-6 h-6" />
+                {!collapsed && <span className="ml-3">Sign In</span>}
+              </button>
+            </SignInButton>
+            {!collapsed && (
+              <SignUpButton mode="modal">
+                <button className="flex items-center w-full px-2 py-2 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white">
+                  <span className="ml-9">Sign Up</span>
+                </button>
+              </SignUpButton>
+            )}
+          </div>
+        </SignedOut>
       </div>
     </div>
   )
