@@ -1,11 +1,19 @@
 'use client';
 
-import { Template } from '@/lib/mockData';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
 import { Button } from './ui/button';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Edit, Trash2, Copy } from 'lucide-react';
 import { useState } from 'react';
+
+interface Template {
+  id: string;
+  name: string;
+  description: string | null;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface TemplateCardProps {
   template: Template;

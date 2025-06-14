@@ -2,11 +2,9 @@
 
 import { MainLayout } from "@/components/main-layout"
 import { Copy, Star, Plus } from "lucide-react"
-import { mockTemplates } from '@/lib/mockData';
 import { TemplateCard } from '@/components/TemplateCard';
 import { TemplateCardSkeleton } from '@/components/TemplateCardSkeleton';
 import { useState, useEffect } from 'react';
-import { Template } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -16,12 +14,23 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
+interface Template {
+  id: string;
+  name: string;
+  description: string | null;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function TemplatesPage() {
   const { isSignedIn, isLoaded } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [newTemplate, setNewTemplate] = useState({
     name: '',
     description: '',
@@ -35,50 +44,135 @@ export default function TemplatesPage() {
     }
   }, [isLoaded, isSignedIn, router]);
 
-  // Simulate loading
+  // Fetch templates
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setTemplates(mockTemplates);
-      setIsLoading(false);
-    }, 1000);
+    const fetchTemplates = async () => {
+      try {
+        const response = await fetch('/api/templates');
+        if (!response.ok) throw new Error('Failed to fetch templates');
+        const data = await response.json();
+        setTemplates(data);
+      } catch (error) {
+        console.error('Error fetching templates:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load templates. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
-  }, []);
+    if (isSignedIn) {
+      fetchTemplates();
+    }
+  }, [isSignedIn, toast]);
 
   const handleEdit = (template: Template) => {
-    console.log('Edit template:', template);
-    // TODO: Implement edit functionality
+    setEditingTemplate(template);
+    setIsEditDialogOpen(true);
   };
 
-  const handleDelete = (template: Template) => {
-    console.log('Delete template:', template);
-    // TODO: Implement delete functionality
+  const handleDelete = async (template: Template) => {
+    try {
+      const response = await fetch(`/api/templates/${template.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete template');
+
+      setTemplates(templates.filter(t => t.id !== template.id));
+      toast({
+        title: "Template Deleted",
+        description: `"${template.name}" has been deleted successfully.`,
+      });
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete template. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCopy = (template: Template) => {
-    console.log('Copy template:', template);
-    // TODO: Implement copy functionality
     navigator.clipboard.writeText(template.content);
+    toast({
+      title: "Copied!",
+      description: "Template content has been copied to clipboard.",
+    });
   };
 
-  const handleCreateTemplate = () => {
-    const template: Template = {
-      id: String(Date.now()),
-      name: newTemplate.name,
-      description: newTemplate.description,
-      content: newTemplate.content,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    setTemplates([template, ...templates]);
-    setNewTemplate({ name: '', description: '', content: '' });
-    setIsCreateDialogOpen(false);
+  const handleCreateTemplate = async () => {
+    try {
+      const response = await fetch('/api/templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTemplate),
+      });
 
-    toast({
-      title: "Template Created",
-      description: `"${template.name}" has been created successfully.`,
-    });
+      if (!response.ok) throw new Error('Failed to create template');
+
+      const template = await response.json();
+      setTemplates([template, ...templates]);
+      setNewTemplate({ name: '', description: '', content: '' });
+      setIsCreateDialogOpen(false);
+
+      toast({
+        title: "Template Created",
+        description: `"${template.name}" has been created successfully.`,
+      });
+    } catch (error) {
+      console.error('Error creating template:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create template. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateTemplate = async () => {
+    if (!editingTemplate) return;
+
+    try {
+      const response = await fetch(`/api/templates/${editingTemplate.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editingTemplate.name,
+          description: editingTemplate.description,
+          content: editingTemplate.content,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update template');
+
+      const updatedTemplate = await response.json();
+      setTemplates(templates.map(t => 
+        t.id === updatedTemplate.id ? updatedTemplate : t
+      ));
+      setIsEditDialogOpen(false);
+      setEditingTemplate(null);
+
+      toast({
+        title: "Template Updated",
+        description: `"${updatedTemplate.name}" has been updated successfully.`,
+      });
+    } catch (error) {
+      console.error('Error updating template:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update template. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!isLoaded || !isSignedIn) {
@@ -110,7 +204,7 @@ export default function TemplatesPage() {
                   <Input
                     id="name"
                     value={newTemplate.name}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                    onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
                     placeholder="Enter template name"
                   />
                 </div>
@@ -119,7 +213,7 @@ export default function TemplatesPage() {
                   <Input
                     id="description"
                     value={newTemplate.description}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTemplate({ ...newTemplate, description: e.target.value })}
+                    onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
                     placeholder="Enter template description"
                   />
                 </div>
@@ -128,7 +222,7 @@ export default function TemplatesPage() {
                   <Textarea
                     id="content"
                     value={newTemplate.content}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewTemplate({ ...newTemplate, content: e.target.value })}
+                    onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
                     placeholder="Enter template content"
                     className="min-h-[200px]"
                   />
@@ -163,6 +257,54 @@ export default function TemplatesPage() {
             ))
           )}
         </div>
+
+        {/* Edit Template Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Template</DialogTitle>
+            </DialogHeader>
+            {editingTemplate && (
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Template Name</Label>
+                  <Input
+                    id="edit-name"
+                    value={editingTemplate.name}
+                    onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
+                    placeholder="Enter template name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Input
+                    id="edit-description"
+                    value={editingTemplate.description || ''}
+                    onChange={(e) => setEditingTemplate({ ...editingTemplate, description: e.target.value })}
+                    placeholder="Enter template description"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-content">Template Content</Label>
+                  <Textarea
+                    id="edit-content"
+                    value={editingTemplate.content}
+                    onChange={(e) => setEditingTemplate({ ...editingTemplate, content: e.target.value })}
+                    placeholder="Enter template content"
+                    className="min-h-[200px]"
+                  />
+                </div>
+                <Button 
+                  onClick={handleUpdateTemplate}
+                  className="w-full"
+                  disabled={!editingTemplate.name || !editingTemplate.content}
+                >
+                  Update Template
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );
