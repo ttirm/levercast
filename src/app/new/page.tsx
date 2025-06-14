@@ -3,6 +3,8 @@
 import { MainLayout } from "@/components/main-layout"
 import { useState, useEffect } from "react"
 import { ImagePlus, Send } from "lucide-react"
+import { useAuth } from "@clerk/nextjs"
+import { useRouter } from "next/navigation"
 
 // Mock templates data
 const mockTemplates = [
@@ -27,10 +29,18 @@ const mockTemplates = [
 ]
 
 export default function NewPost() {
+  const { isSignedIn, isLoaded } = useAuth()
+  const router = useRouter()
   const [content, setContent] = useState("")
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push('/sign-in')
+    }
+  }, [isLoaded, isSignedIn, router])
 
   useEffect(() => {
     if (image) {
@@ -53,6 +63,10 @@ export default function NewPost() {
     if (template) {
       setContent(template.content)
     }
+  }
+
+  if (!isLoaded || !isSignedIn) {
+    return null
   }
 
   return (

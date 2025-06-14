@@ -37,25 +37,27 @@ export function Sidebar() {
         </button>
       </div>
 
-      <nav className="flex-1 px-2 py-4 space-y-1">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`flex items-center px-2 py-2 rounded-lg transition-colors ${
-                isActive 
-                  ? 'bg-yellow-500 text-gray-900' 
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-              }`}
-            >
-              <item.icon className="w-6 h-6" />
-              {!collapsed && <span className="ml-3">{item.name}</span>}
-            </Link>
-          )
-        })}
-      </nav>
+      <SignedIn>
+        <nav className="flex-1 px-2 py-4 space-y-1">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center px-2 py-2 rounded-lg transition-colors ${
+                  isActive 
+                    ? 'bg-yellow-500 text-gray-900' 
+                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                }`}
+              >
+                <item.icon className="w-6 h-6" />
+                {!collapsed && <span className="ml-3">{item.name}</span>}
+              </Link>
+            )
+          })}
+        </nav>
+      </SignedIn>
 
       <div className="p-4 border-t border-gray-800">
         <SignedIn>

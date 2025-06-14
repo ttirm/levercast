@@ -13,8 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 export default function TemplatesPage() {
+  const { isSignedIn, isLoaded } = useAuth();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -24,6 +28,12 @@ export default function TemplatesPage() {
     content: ''
   });
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push('/sign-in');
+    }
+  }, [isLoaded, isSignedIn, router]);
 
   // Simulate loading
   useEffect(() => {
@@ -70,6 +80,10 @@ export default function TemplatesPage() {
       description: `"${template.name}" has been created successfully.`,
     });
   };
+
+  if (!isLoaded || !isSignedIn) {
+    return null;
+  }
 
   return (
     <MainLayout>
