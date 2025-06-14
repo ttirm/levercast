@@ -11,11 +11,13 @@ export const config = {
     // Protect trpc routes
     '/trpc/:path*',
     // Protect specific routes that require authentication
+    '/',
     '/new',
-    '/posts',
-    '/templates',
-    '/settings',
+    '/posts/:path*',
+    '/templates/:path*',
+    '/settings/:path*',
+    '/edit/:path*',
     // Exclude static files and Next.js internals
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|sign-in|sign-up).*)',
   ],
 };
