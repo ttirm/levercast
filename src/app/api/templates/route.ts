@@ -8,7 +8,7 @@ export async function GET() {
     const { userId: clerkId } = await auth();
     
     if (!clerkId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return new NextResponse('Unauthorized', { status: 401 });
     }
 
     // Get the user's database ID
@@ -18,7 +18,7 @@ export async function GET() {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return new NextResponse('User not found', { status: 404 });
     }
 
     const templates = await prisma.template.findMany({
@@ -32,21 +32,18 @@ export async function GET() {
 
     return NextResponse.json(templates);
   } catch (error) {
-    console.error('Error fetching templates:', error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
-    );
+    console.error('[TEMPLATES_GET]', error);
+    return new NextResponse('Internal Error', { status: 500 });
   }
 }
 
 // POST /api/templates - Create a new template
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
     const { userId: clerkId } = await auth();
     
     if (!clerkId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return new NextResponse('Unauthorized', { status: 401 });
     }
 
     // Get the user's database ID
@@ -56,30 +53,14 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return new NextResponse('User not found', { status: 404 });
     }
 
-    const body = await request.json();
-    const { name, description, content, isDefault } = body;
+    const body = await req.json();
+    const { name, description, content } = body;
 
     if (!name || !content) {
-      return NextResponse.json(
-        { error: 'Name and content are required' },
-        { status: 400 }
-      );
-    }
-
-    // If this template is set as default, unset any existing default template
-    if (isDefault) {
-      await prisma.template.updateMany({
-        where: {
-          userId: user.id,
-          isDefault: true,
-        },
-        data: {
-          isDefault: false,
-        },
-      });
+      return new NextResponse('Missing required fields', { status: 400 });
     }
 
     const template = await prisma.template.create({
@@ -87,17 +68,13 @@ export async function POST(request: Request) {
         name,
         description,
         content,
-        isDefault: isDefault || false,
         userId: user.id,
       },
     });
 
     return NextResponse.json(template);
   } catch (error) {
-    console.error('Error creating template:', error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
-    );
+    console.error('[TEMPLATES_POST]', error);
+    return new NextResponse('Internal Error', { status: 500 });
   }
 } 
