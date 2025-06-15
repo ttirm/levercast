@@ -6,27 +6,14 @@ import { ImagePlus, Send } from "lucide-react"
 import { useAuth } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 
-// Mock templates data
-const mockTemplates = [
-  {
-    id: 1,
-    name: "Product Launch",
-    description: "Perfect for announcing new products or features",
-    content: "🎉 Exciting news! We're thrilled to announce our latest [product/feature] that will revolutionize [industry/problem].\n\nKey benefits:\n• [Benefit 1]\n• [Benefit 2]\n• [Benefit 3]\n\nLearn more: [link]"
-  },
-  {
-    id: 2,
-    name: "Industry Insights",
-    description: "Share your expertise and thought leadership",
-    content: "💡 Industry Insight: [Topic]\n\nIn today's rapidly evolving [industry], [observation/trend]. Here's why this matters:\n\n1. [Point 1]\n2. [Point 2]\n3. [Point 3]\n\nWhat are your thoughts on this? Let's discuss in the comments!"
-  },
-  {
-    id: 3,
-    name: "Event Promotion",
-    description: "Promote webinars, conferences, or meetups",
-    content: "📅 Save the date! Join us for [Event Name] on [Date]\n\nWhat to expect:\n• [Highlight 1]\n• [Highlight 2]\n• [Highlight 3]\n\nRegister now: [link]\n\n#EventHashtag #IndustryHashtag"
-  }
-]
+interface Template {
+  id: string;
+  name: string;
+  description: string | null;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function NewPost() {
   const { isSignedIn, isLoaded } = useAuth()
@@ -34,13 +21,35 @@ export default function NewPost() {
   const [content, setContent] = useState("")
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
       router.push('/sign-in')
     }
   }, [isLoaded, isSignedIn, router])
+
+  // Fetch templates
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const response = await fetch('/api/templates');
+        if (!response.ok) throw new Error('Failed to fetch templates');
+        const data = await response.json();
+        setTemplates(data);
+      } catch (error) {
+        console.error('Error fetching templates:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isSignedIn) {
+      fetchTemplates();
+    }
+  }, [isSignedIn]);
 
   useEffect(() => {
     if (image) {
@@ -57,9 +66,9 @@ export default function NewPost() {
   }
 
   const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const templateId = parseInt(e.target.value)
+    const templateId = e.target.value
     setSelectedTemplate(templateId)
-    const template = mockTemplates.find(t => t.id === templateId)
+    const template = templates.find(t => t.id === templateId)
     if (template) {
       setContent(template.content)
     }
@@ -88,11 +97,12 @@ export default function NewPost() {
                   value={selectedTemplate || ""}
                   onChange={handleTemplateChange}
                   className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 [&>option]:bg-gray-800 [&>option]:text-white"
+                  disabled={isLoading}
                 >
                   <option value="">Choose a template...</option>
-                  {mockTemplates.map((template) => (
+                  {templates.map((template) => (
                     <option key={template.id} value={template.id}>
-                      {template.name} - {template.description}
+                      {template.name} - {template.description || 'No description'}
                     </option>
                   ))}
                 </select>
