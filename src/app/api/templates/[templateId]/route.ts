@@ -25,9 +25,9 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { name, description, content } = body;
+    const { name, description, platformPrompts } = body;
 
-    if (!name || !content) {
+    if (!name || !platformPrompts || !Array.isArray(platformPrompts)) {
       return new NextResponse('Missing required fields', { status: 400 });
     }
 
@@ -43,6 +43,7 @@ export async function PATCH(
       return new NextResponse('Template not found', { status: 404 });
     }
 
+    // Update template and its platform prompts
     const template = await prisma.template.update({
       where: {
         id: params.templateId,
@@ -50,7 +51,16 @@ export async function PATCH(
       data: {
         name,
         description,
-        content,
+        platformTemplates: {
+          deleteMany: {},
+          create: platformPrompts.map((prompt: { platform: string; prompt: string }) => ({
+            platform: prompt.platform as any,
+            prompt: prompt.prompt,
+          })),
+        },
+      },
+      include: {
+        platformTemplates: true,
       },
     });
 

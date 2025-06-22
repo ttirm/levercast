@@ -50,13 +50,26 @@ model Template {
   id            String    @id @default(cuid())
   name          String
   description   String?
-  content       String    @db.Text
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   userId        String
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   posts         Post[]
   isDefault     Boolean   @default(false)
+  platformTemplates PlatformTemplate[]
+}
+
+// Platform-specific template prompts
+model PlatformTemplate {
+  id            String    @id @default(cuid())
+  templateId    String
+  template      Template  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  platform      Platform
+  prompt        String    @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([templateId, platform])
 }
 
 // Settings model for user preferences

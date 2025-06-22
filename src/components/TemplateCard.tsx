@@ -5,15 +5,7 @@ import { Button } from './ui/button';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Edit, Trash2, Copy } from 'lucide-react';
 import { useState } from 'react';
-
-interface Template {
-  id: string;
-  name: string;
-  description: string | null;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { Template } from '@/lib/types';
 
 interface TemplateCardProps {
   template: Template;
@@ -63,9 +55,20 @@ export function TemplateCard({ template, onEdit, onDelete, onCopy }: TemplateCar
         <CardDescription>{template.description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <pre className="text-sm text-muted-foreground bg-gray-100 dark:bg-gray-900 p-2 rounded-md overflow-x-auto">
-          {template.content}
-        </pre>
+        <div className="space-y-2">
+          {template.platformTemplates.map((platformTemplate) => (
+            <div key={platformTemplate.platform} className="text-sm">
+              <div className="font-medium text-muted-foreground mb-1">
+                {platformTemplate.platform}:
+              </div>
+              <pre className="text-xs text-muted-foreground bg-gray-100 dark:bg-gray-900 p-2 rounded-md overflow-x-auto">
+                {platformTemplate.prompt.length > 100 
+                  ? `${platformTemplate.prompt.substring(0, 100)}...` 
+                  : platformTemplate.prompt}
+              </pre>
+            </div>
+          ))}
+        </div>
       </CardContent>
       <CardFooter className="flex justify-between items-center">
         <div className="text-sm text-muted-foreground">

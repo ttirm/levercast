@@ -13,15 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-
-interface Template {
-  id: string;
-  name: string;
-  description: string | null;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { Template, CreateTemplateData } from '@/lib/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function TemplatesPage() {
   const { isSignedIn, isLoaded } = useAuth();
@@ -31,10 +24,13 @@ export default function TemplatesPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
-  const [newTemplate, setNewTemplate] = useState({
+  const [newTemplate, setNewTemplate] = useState<CreateTemplateData>({
     name: '',
     description: '',
-    content: ''
+    platformPrompts: [
+      { platform: 'LINKEDIN', prompt: '' },
+      { platform: 'TWITTER', prompt: '' }
+    ]
   });
   const { toast } = useToast();
 
@@ -98,10 +94,13 @@ export default function TemplatesPage() {
   };
 
   const handleCopy = (template: Template) => {
-    navigator.clipboard.writeText(template.content);
+    const promptText = template.platformTemplates
+      .map(pt => `${pt.platform}:\n${pt.prompt}`)
+      .join('\n\n');
+    navigator.clipboard.writeText(promptText);
     toast({
       title: "Copied!",
-      description: "Template content has been copied to clipboard.",
+      description: "Template prompts have been copied to clipboard.",
     });
   };
 
@@ -119,7 +118,14 @@ export default function TemplatesPage() {
 
       const template = await response.json();
       setTemplates([template, ...templates]);
-      setNewTemplate({ name: '', description: '', content: '' });
+      setNewTemplate({
+        name: '',
+        description: '',
+        platformPrompts: [
+          { platform: 'LINKEDIN', prompt: '' },
+          { platform: 'TWITTER', prompt: '' }
+        ]
+      });
       setIsCreateDialogOpen(false);
 
       toast({
@@ -148,7 +154,10 @@ export default function TemplatesPage() {
         body: JSON.stringify({
           name: editingTemplate.name,
           description: editingTemplate.description,
-          content: editingTemplate.content,
+          platformPrompts: editingTemplate.platformTemplates.map(pt => ({
+            platform: pt.platform,
+            prompt: pt.prompt,
+          })),
         }),
       });
 
@@ -175,6 +184,24 @@ export default function TemplatesPage() {
     }
   };
 
+  const updatePlatformPrompt = (platform: 'LINKEDIN' | 'TWITTER', prompt: string, isEditing = false) => {
+    if (isEditing && editingTemplate) {
+      setEditingTemplate({
+        ...editingTemplate,
+        platformTemplates: editingTemplate.platformTemplates.map(pt =>
+          pt.platform === platform ? { ...pt, prompt } : pt
+        )
+      });
+    } else {
+      setNewTemplate({
+        ...newTemplate,
+        platformPrompts: newTemplate.platformPrompts.map(pp =>
+          pp.platform === platform ? { ...pp, prompt } : pp
+        )
+      });
+    }
+  };
+
   if (!isLoaded || !isSignedIn) {
     return null;
   }
@@ -194,7 +221,7 @@ export default function TemplatesPage() {
                 Create Template
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Create New Template</DialogTitle>
               </DialogHeader>
@@ -205,7 +232,7 @@ export default function TemplatesPage() {
                     id="name"
                     value={newTemplate.name}
                     onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
-                    placeholder="Enter template name"
+                    placeholder="e.g., Professional LinkedIn, Casual Twitter"
                   />
                 </div>
                 <div className="space-y-2">
@@ -214,23 +241,32 @@ export default function TemplatesPage() {
                     id="description"
                     value={newTemplate.description}
                     onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
-                    placeholder="Enter template description"
+                    placeholder="Describe what this template does"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="content">Template Content</Label>
-                  <Textarea
-                    id="content"
-                    value={newTemplate.content}
-                    onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
-                    placeholder="Enter template content"
-                    className="min-h-[200px]"
-                  />
+                <div className="space-y-4">
+                  <Label>Platform Prompts</Label>
+                  {newTemplate.platformPrompts.map((platformPrompt) => (
+                    <div key={platformPrompt.platform} className="space-y-2">
+                      <Label className="text-sm font-medium">
+                        {platformPrompt.platform} Prompt
+                      </Label>
+                      <Textarea
+                        value={platformPrompt.prompt}
+                        onChange={(e) => updatePlatformPrompt(platformPrompt.platform, e.target.value)}
+                        placeholder={`Enter your ${platformPrompt.platform.toLowerCase()} prompt...`}
+                        className="min-h-[100px]"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Example: "Rewrite this content in a professional tone suitable for LinkedIn, focusing on business insights and industry expertise."
+                      </p>
+                    </div>
+                  ))}
                 </div>
                 <Button 
                   onClick={handleCreateTemplate}
                   className="w-full"
-                  disabled={!newTemplate.name || !newTemplate.content}
+                  disabled={!newTemplate.name || newTemplate.platformPrompts.some(pp => !pp.prompt)}
                 >
                   Create Template
                 </Button>
@@ -260,7 +296,7 @@ export default function TemplatesPage() {
 
         {/* Edit Template Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Template</DialogTitle>
             </DialogHeader>
@@ -284,20 +320,26 @@ export default function TemplatesPage() {
                     placeholder="Enter template description"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-content">Template Content</Label>
-                  <Textarea
-                    id="edit-content"
-                    value={editingTemplate.content}
-                    onChange={(e) => setEditingTemplate({ ...editingTemplate, content: e.target.value })}
-                    placeholder="Enter template content"
-                    className="min-h-[200px]"
-                  />
+                <div className="space-y-4">
+                  <Label>Platform Prompts</Label>
+                  {editingTemplate.platformTemplates.map((platformTemplate) => (
+                    <div key={platformTemplate.platform} className="space-y-2">
+                      <Label className="text-sm font-medium">
+                        {platformTemplate.platform} Prompt
+                      </Label>
+                      <Textarea
+                        value={platformTemplate.prompt}
+                        onChange={(e) => updatePlatformPrompt(platformTemplate.platform, e.target.value, true)}
+                        placeholder={`Enter your ${platformTemplate.platform.toLowerCase()} prompt...`}
+                        className="min-h-[100px]"
+                      />
+                    </div>
+                  ))}
                 </div>
                 <Button 
                   onClick={handleUpdateTemplate}
                   className="w-full"
-                  disabled={!editingTemplate.name || !editingTemplate.content}
+                  disabled={!editingTemplate.name || editingTemplate.platformTemplates.some(pt => !pt.prompt)}
                 >
                   Update Template
                 </Button>

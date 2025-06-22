@@ -2,28 +2,27 @@
 
 import { MainLayout } from "@/components/main-layout"
 import { useState, useEffect } from "react"
-import { ImagePlus, Send } from "lucide-react"
+import { ImagePlus, Send, Sparkles } from "lucide-react"
 import { useAuth } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-
-interface Template {
-  id: string;
-  name: string;
-  description: string | null;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { Template } from '@/lib/types'
+import { useToast } from "@/hooks/use-toast"
 
 export default function NewPost() {
   const { isSignedIn, isLoaded } = useAuth()
   const router = useRouter()
-  const [content, setContent] = useState("")
+  const { toast } = useToast()
+  const [rawContent, setRawContent] = useState("")
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
   const [templates, setTemplates] = useState<Template[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generatedContent, setGeneratedContent] = useState<{
+    linkedin?: string;
+    twitter?: string;
+  }>({})
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -41,6 +40,11 @@ export default function NewPost() {
         setTemplates(data);
       } catch (error) {
         console.error('Error fetching templates:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load templates. Please try again.",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -49,7 +53,7 @@ export default function NewPost() {
     if (isSignedIn) {
       fetchTemplates();
     }
-  }, [isSignedIn]);
+  }, [isSignedIn, toast]);
 
   useEffect(() => {
     if (image) {
@@ -68,9 +72,76 @@ export default function NewPost() {
   const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const templateId = e.target.value
     setSelectedTemplate(templateId)
-    const template = templates.find(t => t.id === templateId)
-    if (template) {
-      setContent(template.content)
+    // Clear generated content when template changes
+    setGeneratedContent({})
+  }
+
+  const generateContent = async () => {
+    if (!selectedTemplate || !rawContent.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a template and enter some content.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    const template = templates.find(t => t.id === selectedTemplate);
+    
+    if (!template) {
+      toast({
+        title: "Error",
+        description: "Selected template not found.",
+        variant: "destructive",
+      });
+      setIsGenerating(false);
+      return;
+    }
+
+    try {
+      const newGeneratedContent: { linkedin?: string; twitter?: string } = {};
+
+      // Generate content for each platform
+      for (const platformTemplate of template.platformTemplates) {
+        const response = await fetch('/api/generate-content', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            templateId: selectedTemplate,
+            platform: platformTemplate.platform,
+            rawContent: rawContent,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to generate content for ${platformTemplate.platform}`);
+        }
+
+        const data = await response.json();
+        if (platformTemplate.platform === 'LINKEDIN') {
+          newGeneratedContent.linkedin = data.generatedContent;
+        } else if (platformTemplate.platform === 'TWITTER') {
+          newGeneratedContent.twitter = data.generatedContent;
+        }
+      }
+
+      setGeneratedContent(newGeneratedContent);
+      toast({
+        title: "Content Generated",
+        description: "Your content has been generated using the selected template.",
+      });
+    } catch (error) {
+      console.error('Error generating content:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate content. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
     }
   }
 
@@ -108,12 +179,18 @@ export default function NewPost() {
                 </select>
               </div>
 
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Write your post content here..."
-                className="w-full h-48 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              />
+              <div className="mb-4">
+                <label htmlFor="raw-content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Raw Content
+                </label>
+                <textarea
+                  id="raw-content"
+                  value={rawContent}
+                  onChange={(e) => setRawContent(e.target.value)}
+                  placeholder="Write your raw content here... This will be transformed using your selected template."
+                  className="w-full h-48 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+              </div>
               
               <div className="flex items-center justify-between mt-4">
                 <label className="flex items-center gap-2 text-gray-600 dark:text-gray-300 cursor-pointer">
@@ -128,10 +205,21 @@ export default function NewPost() {
                 </label>
                 
                 <button
-                  className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-gray-900 rounded-lg hover:bg-yellow-600 transition-colors"
+                  onClick={generateContent}
+                  disabled={isGenerating || !selectedTemplate || !rawContent.trim()}
+                  className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-gray-900 rounded-lg hover:bg-yellow-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Send className="w-5 h-5" />
-                  <span>Generate Previews</span>
+                  {isGenerating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-5 h-5" />
+                      <span>Generate Content</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -151,7 +239,7 @@ export default function NewPost() {
                   </div>
                 </div>
                 <p className="text-gray-700 dark:text-gray-300">
-                  {content || "Your post content will appear here..."}
+                  {generatedContent.linkedin || "Generated LinkedIn content will appear here..."}
                 </p>
                 {imagePreview && (
                   <div className="mt-3 rounded-lg overflow-hidden">
@@ -177,7 +265,7 @@ export default function NewPost() {
                   </div>
                 </div>
                 <p className="text-gray-700 dark:text-gray-300">
-                  {content || "Your tweet content will appear here..."}
+                  {generatedContent.twitter || "Generated Twitter content will appear here..."}
                 </p>
                 {imagePreview && (
                   <div className="mt-3 rounded-lg overflow-hidden">
