@@ -176,3 +176,56 @@ The system is designed to integrate with any LLM service:
 2. **Dynamic Length**: Adjust prompts based on content length
 3. **Brand Guidelines**: Integrate brand voice and style guides
 4. **Industry-specific**: Pre-built templates for different industries 
+
+-- New table to link posts with platform-specific templates
+CREATE TABLE "PostTemplate" (
+    "id" TEXT NOT NULL,
+    "postId" TEXT NOT NULL,
+    "templateId" TEXT NOT NULL,
+    "platform" "Platform" NOT NULL,
+    "generatedContent" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PostTemplate_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "unique_post_platform" UNIQUE ("postId", "platform")
+); 
+
+// Updated Template interface
+interface Template {
+  id: string;
+  name: string;
+  description: string | null;
+  platform: Platform;
+  prompt: string;
+  createdAt: string;
+  updatedAt: string;
+  isDefault: boolean;
+}
+
+// New PostTemplate interface
+interface PostTemplate {
+  id: string;
+  postId: string;
+  templateId: string;
+  platform: Platform;
+  generatedContent: string | null;
+  createdAt: string;
+  updatedAt: string;
+  template: Template;
+}
+
+// Updated Post interface
+interface Post {
+  id: string;
+  title: string;
+  content: string;
+  formattedContent: string | null;
+  status: PostStatus;
+  imageUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+  userId: string;
+  postTemplates: PostTemplate[];
+} 

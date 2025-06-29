@@ -56,18 +56,16 @@ export function TemplateCard({ template, onEdit, onDelete, onCopy }: TemplateCar
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {template.platformTemplates.map((platformTemplate) => (
-            <div key={platformTemplate.platform} className="text-sm">
-              <div className="font-medium text-muted-foreground mb-1">
-                {platformTemplate.platform}:
-              </div>
-              <pre className="text-xs text-muted-foreground bg-gray-100 dark:bg-gray-900 p-2 rounded-md overflow-x-auto">
-                {platformTemplate.prompt.length > 100 
-                  ? `${platformTemplate.prompt.substring(0, 100)}...` 
-                  : platformTemplate.prompt}
-              </pre>
+          <div className="text-sm">
+            <div className="font-medium text-muted-foreground mb-1">
+              {template.platform}:
             </div>
-          ))}
+            <pre className="text-xs text-muted-foreground bg-gray-100 dark:bg-gray-900 p-2 rounded-md overflow-x-auto">
+              {template.prompt.length > 100 
+                ? `${template.prompt.substring(0, 100)}...` 
+                : template.prompt}
+            </pre>
+          </div>
         </div>
       </CardContent>
       <CardFooter className="flex justify-between items-center">

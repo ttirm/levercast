@@ -1,14 +1,20 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
+import { generateContentWithOpenAI, validateOpenAIKey } from '@/lib/openai';
 
-// POST /api/generate-content - Generate content using template prompts
+// POST /api/generate-content - Generate content using template prompt
 export async function POST(req: Request) {
   try {
     const { userId: clerkId } = await auth();
     
     if (!clerkId) {
       return new NextResponse('Unauthorized', { status: 401 });
+    }
+
+    // Check if OpenAI API key is configured
+    if (!validateOpenAIKey()) {
+      return new NextResponse('OpenAI API key not configured', { status: 500 });
     }
 
     // Get the user's database ID
@@ -28,18 +34,23 @@ export async function POST(req: Request) {
       return new NextResponse('Missing required fields', { status: 400 });
     }
 
-    // Get the template and its platform-specific prompt
+    // Validate platform
+    if (!['LINKEDIN', 'TWITTER'].includes(platform)) {
+      return new NextResponse('Invalid platform', { status: 400 });
+    }
+
+    // Get the template for the given platform and templateId
     const template = await prisma.template.findFirst({
       where: {
         id: templateId,
         userId: user.id,
+        platform: platform,
       },
-      include: {
-        platformTemplates: {
-          where: {
-            platform: platform as any,
-          },
-        },
+      select: {
+        id: true,
+        name: true,
+        platform: true,
+        prompt: true,
       },
     });
 
@@ -47,53 +58,36 @@ export async function POST(req: Request) {
       return new NextResponse('Template not found', { status: 404 });
     }
 
-    const platformTemplate = template.platformTemplates[0];
-    if (!platformTemplate) {
-      return new NextResponse('Platform template not found', { status: 404 });
-    }
-
-    // TODO: Integrate with actual LLM service (OpenAI, Anthropic, etc.)
-    // For now, we'll return a mock response
-    const generatedContent = await generateContentWithLLM(
-      platformTemplate.prompt,
+    // Generate content using OpenAI
+    const generatedContent = await generateContentWithOpenAI({
+      prompt: template.prompt,
       rawContent,
-      platform
-    );
+      platform,
+    });
 
     return NextResponse.json({
       generatedContent,
       template: {
         id: template.id,
         name: template.name,
-        platform: platformTemplate.platform,
-        prompt: platformTemplate.prompt,
+        platform: template.platform,
+        prompt: template.prompt,
       },
     });
   } catch (error) {
     console.error('[GENERATE_CONTENT_POST]', error);
+    
+    // Handle specific OpenAI errors
+    if (error instanceof Error) {
+      if (error.message.includes('OpenAI API key')) {
+        return new NextResponse(error.message, { status: 500 });
+      } else if (error.message.includes('rate limit')) {
+        return new NextResponse(error.message, { status: 429 });
+      } else if (error.message.includes('temporarily unavailable')) {
+        return new NextResponse(error.message, { status: 503 });
+      }
+    }
+    
     return new NextResponse('Internal Error', { status: 500 });
   }
-}
-
-// Mock LLM integration - replace with actual LLM service
-async function generateContentWithLLM(
-  prompt: string,
-  rawContent: string,
-  platform: string
-): Promise<string> {
-  // This is a placeholder implementation
-  // In a real implementation, you would:
-  // 1. Call OpenAI API, Anthropic API, or another LLM service
-  // 2. Pass the prompt and raw content
-  // 3. Return the generated content
-  
-  const enhancedPrompt = `${prompt}
-
-Raw content to transform:
-"${rawContent}"
-
-Please generate content that follows the above instructions for ${platform}.`;
-
-  // For now, return a mock response
-  return `Generated content for ${platform} using the template prompt. This would be the actual LLM-generated content based on: "${rawContent}"`;
 } 

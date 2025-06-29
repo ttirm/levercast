@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/templates - Get all templates for the current user
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const { userId: clerkId } = await auth();
     
@@ -19,7 +19,6 @@ export async function GET() {
 
     if (!user) {
       // User doesn't exist in database, create them
-      // This can happen if the webhook didn't fire or failed
       try {
         user = await prisma.user.create({
           data: {
@@ -38,12 +37,14 @@ export async function GET() {
       }
     }
 
+    // Get platform filter from query params
+    const { searchParams } = new URL(req.url);
+    const platform = searchParams.get('platform');
+
     const templates = await prisma.template.findMany({
       where: {
         userId: user.id,
-      },
-      include: {
-        platformTemplates: true,
+        ...(platform && { platform: platform as any }),
       },
       orderBy: {
         createdAt: 'desc',
@@ -63,11 +64,9 @@ async function createDefaultTemplates(userId: string) {
     {
       name: 'Professional LinkedIn',
       description: 'Transform content into professional LinkedIn posts with business insights',
-      platformPrompts: [
-        {
-          platform: 'LINKEDIN',
-          prompt: `Transform the following content into a professional LinkedIn post. 
-          
+      platform: 'LINKEDIN' as const,
+      prompt: `Transform the following content into a professional LinkedIn post. 
+      
 Guidelines:
 - Use a professional, business-focused tone
 - Include industry insights and thought leadership
@@ -77,11 +76,13 @@ Guidelines:
 - Maximum 1300 characters
 
 Content to transform:`,
-        },
-        {
-          platform: 'TWITTER',
-          prompt: `Transform the following content into a professional Twitter post.
-          
+    },
+    {
+      name: 'Professional Twitter',
+      description: 'Transform content into professional Twitter posts',
+      platform: 'TWITTER' as const,
+      prompt: `Transform the following content into a professional Twitter post.
+      
 Guidelines:
 - Use a professional but conversational tone
 - Focus on key insights and takeaways
@@ -91,17 +92,13 @@ Guidelines:
 - Maximum 280 characters
 
 Content to transform:`,
-        },
-      ],
     },
     {
-      name: 'Casual & Friendly',
-      description: 'Make content more casual and approachable for social media',
-      platformPrompts: [
-        {
-          platform: 'LINKEDIN',
-          prompt: `Transform the following content into a casual, friendly LinkedIn post.
-          
+      name: 'Casual LinkedIn',
+      description: 'Make content more casual and approachable for LinkedIn',
+      platform: 'LINKEDIN' as const,
+      prompt: `Transform the following content into a casual, friendly LinkedIn post.
+      
 Guidelines:
 - Use a warm, approachable tone
 - Make it conversational and relatable
@@ -112,11 +109,13 @@ Guidelines:
 - Maximum 1300 characters
 
 Content to transform:`,
-        },
-        {
-          platform: 'TWITTER',
-          prompt: `Transform the following content into a casual, friendly Twitter post.
-          
+    },
+    {
+      name: 'Casual Twitter',
+      description: 'Make content more casual and approachable for Twitter',
+      platform: 'TWITTER' as const,
+      prompt: `Transform the following content into a casual, friendly Twitter post.
+      
 Guidelines:
 - Use a warm, conversational tone
 - Make it relatable and engaging
@@ -127,8 +126,6 @@ Guidelines:
 - Maximum 280 characters
 
 Content to transform:`,
-        },
-      ],
     },
   ];
 
@@ -137,13 +134,9 @@ Content to transform:`,
       data: {
         name: template.name,
         description: template.description,
+        platform: template.platform,
+        prompt: template.prompt,
         userId: userId,
-        platformTemplates: {
-          create: template.platformPrompts.map((prompt) => ({
-            platform: prompt.platform as any,
-            prompt: prompt.prompt,
-          })),
-        },
       },
     });
   }
@@ -182,26 +175,24 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, description, platformPrompts } = body;
+    const { name, description, platform, prompt } = body;
 
-    if (!name || !platformPrompts || !Array.isArray(platformPrompts)) {
+    if (!name || !platform || !prompt) {
       return new NextResponse('Missing required fields', { status: 400 });
+    }
+
+    // Validate platform value
+    if (!['LINKEDIN', 'TWITTER'].includes(platform)) {
+      return new NextResponse('Invalid platform value', { status: 400 });
     }
 
     const template = await prisma.template.create({
       data: {
         name,
         description,
+        platform,
+        prompt,
         userId: user.id,
-        platformTemplates: {
-          create: platformPrompts.map((prompt: { platform: string; prompt: string }) => ({
-            platform: prompt.platform as any,
-            prompt: prompt.prompt,
-          })),
-        },
-      },
-      include: {
-        platformTemplates: true,
       },
     });
 

@@ -13,8 +13,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { Template, CreateTemplateData } from '@/lib/types';
+import { Template, CreateTemplateData, Platform } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const PLATFORM_OPTIONS: { label: string; value: Platform }[] = [
+  { label: "LinkedIn", value: "LINKEDIN" },
+  { label: "Twitter", value: "TWITTER" },
+];
 
 export default function TemplatesPage() {
   const { isSignedIn, isLoaded } = useAuth();
@@ -27,10 +32,8 @@ export default function TemplatesPage() {
   const [newTemplate, setNewTemplate] = useState<CreateTemplateData>({
     name: '',
     description: '',
-    platformPrompts: [
-      { platform: 'LINKEDIN', prompt: '' },
-      { platform: 'TWITTER', prompt: '' }
-    ]
+    platform: 'LINKEDIN',
+    prompt: ''
   });
   const { toast } = useToast();
 
@@ -94,13 +97,10 @@ export default function TemplatesPage() {
   };
 
   const handleCopy = (template: Template) => {
-    const promptText = template.platformTemplates
-      .map(pt => `${pt.platform}:\n${pt.prompt}`)
-      .join('\n\n');
-    navigator.clipboard.writeText(promptText);
+    navigator.clipboard.writeText(template.prompt);
     toast({
       title: "Copied!",
-      description: "Template prompts have been copied to clipboard.",
+      description: "Template prompt has been copied to clipboard.",
     });
   };
 
@@ -121,10 +121,8 @@ export default function TemplatesPage() {
       setNewTemplate({
         name: '',
         description: '',
-        platformPrompts: [
-          { platform: 'LINKEDIN', prompt: '' },
-          { platform: 'TWITTER', prompt: '' }
-        ]
+        platform: 'LINKEDIN',
+        prompt: ''
       });
       setIsCreateDialogOpen(false);
 
@@ -154,10 +152,8 @@ export default function TemplatesPage() {
         body: JSON.stringify({
           name: editingTemplate.name,
           description: editingTemplate.description,
-          platformPrompts: editingTemplate.platformTemplates.map(pt => ({
-            platform: pt.platform,
-            prompt: pt.prompt,
-          })),
+          platform: editingTemplate.platform,
+          prompt: editingTemplate.prompt,
         }),
       });
 
@@ -180,24 +176,6 @@ export default function TemplatesPage() {
         title: "Error",
         description: "Failed to update template. Please try again.",
         variant: "destructive",
-      });
-    }
-  };
-
-  const updatePlatformPrompt = (platform: 'LINKEDIN' | 'TWITTER', prompt: string, isEditing = false) => {
-    if (isEditing && editingTemplate) {
-      setEditingTemplate({
-        ...editingTemplate,
-        platformTemplates: editingTemplate.platformTemplates.map(pt =>
-          pt.platform === platform ? { ...pt, prompt } : pt
-        )
-      });
-    } else {
-      setNewTemplate({
-        ...newTemplate,
-        platformPrompts: newTemplate.platformPrompts.map(pp =>
-          pp.platform === platform ? { ...pp, prompt } : pp
-        )
       });
     }
   };
@@ -244,37 +222,39 @@ export default function TemplatesPage() {
                     placeholder="Describe what this template does"
                   />
                 </div>
-                <div className="space-y-4">
-                  <Label>Platform Prompts</Label>
-                  {newTemplate.platformPrompts.map((platformPrompt) => (
-                    <div key={platformPrompt.platform} className="space-y-2">
-                      <Label className="text-sm font-medium">
-                        {platformPrompt.platform} Prompt
-                      </Label>
-                      <Textarea
-                        value={platformPrompt.prompt}
-                        onChange={(e) => updatePlatformPrompt(platformPrompt.platform, e.target.value)}
-                        placeholder={`Enter your ${platformPrompt.platform.toLowerCase()} prompt...`}
-                        className="min-h-[100px]"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Example: "Rewrite this content in a professional tone suitable for LinkedIn, focusing on business insights and industry expertise."
-                      </p>
-                    </div>
-                  ))}
+                <div className="space-y-2">
+                  <Label htmlFor="platform">Platform</Label>
+                  <Select
+                    value={newTemplate.platform}
+                    onValueChange={(value) => setNewTemplate({ ...newTemplate, platform: value as Platform })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select platform" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PLATFORM_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Button 
-                  onClick={handleCreateTemplate}
-                  className="w-full"
-                  disabled={!newTemplate.name || newTemplate.platformPrompts.some(pp => !pp.prompt)}
-                >
+                <div className="space-y-2">
+                  <Label htmlFor="prompt">Prompt</Label>
+                  <Textarea
+                    id="prompt"
+                    value={newTemplate.prompt}
+                    onChange={(e) => setNewTemplate({ ...newTemplate, prompt: e.target.value })}
+                    placeholder="Write the prompt for this platform..."
+                  />
+                </div>
+                <Button onClick={handleCreateTemplate} className="w-full" disabled={!newTemplate.name || !newTemplate.prompt}>
                   Create Template
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
         </div>
-        
+
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {isLoading ? (
             // Show 6 skeleton cards while loading
@@ -308,7 +288,6 @@ export default function TemplatesPage() {
                     id="edit-name"
                     value={editingTemplate.name}
                     onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
-                    placeholder="Enter template name"
                   />
                 </div>
                 <div className="space-y-2">
@@ -317,29 +296,36 @@ export default function TemplatesPage() {
                     id="edit-description"
                     value={editingTemplate.description || ''}
                     onChange={(e) => setEditingTemplate({ ...editingTemplate, description: e.target.value })}
-                    placeholder="Enter template description"
                   />
                 </div>
-                <div className="space-y-4">
-                  <Label>Platform Prompts</Label>
-                  {editingTemplate.platformTemplates.map((platformTemplate) => (
-                    <div key={platformTemplate.platform} className="space-y-2">
-                      <Label className="text-sm font-medium">
-                        {platformTemplate.platform} Prompt
-                      </Label>
-                      <Textarea
-                        value={platformTemplate.prompt}
-                        onChange={(e) => updatePlatformPrompt(platformTemplate.platform, e.target.value, true)}
-                        placeholder={`Enter your ${platformTemplate.platform.toLowerCase()} prompt...`}
-                        className="min-h-[100px]"
-                      />
-                    </div>
-                  ))}
+                <div className="space-y-2">
+                  <Label htmlFor="edit-platform">Platform</Label>
+                  <Select
+                    value={editingTemplate.platform}
+                    onValueChange={(value) => setEditingTemplate({ ...editingTemplate, platform: value as Platform })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select platform" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PLATFORM_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-prompt">Prompt</Label>
+                  <Textarea
+                    id="edit-prompt"
+                    value={editingTemplate.prompt}
+                    onChange={(e) => setEditingTemplate({ ...editingTemplate, prompt: e.target.value })}
+                  />
                 </div>
                 <Button 
                   onClick={handleUpdateTemplate}
                   className="w-full"
-                  disabled={!editingTemplate.name || editingTemplate.platformTemplates.some(pt => !pt.prompt)}
+                  disabled={!editingTemplate.name || !editingTemplate.prompt}
                 >
                   Update Template
                 </Button>
