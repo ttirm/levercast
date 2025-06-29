@@ -11,7 +11,6 @@ export const config = {
     // Protect trpc routes
     '/trpc/:path*',
     // Protect specific routes that require authentication
-    '/',
     '/new',
     '/posts/:path*',
     '/templates/:path*',

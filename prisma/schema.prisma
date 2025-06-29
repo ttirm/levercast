@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,99 +7,108 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model to store user information
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  clerkId       String    @unique // Clerk authentication ID
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  posts         Post[]
-  templates     Template[]
-  settings      Settings?
+  id             String          @id @default(cuid())
+  email          String          @unique
+  name           String?
+  clerkId        String          @unique
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  posts          Post[]
+  settings       Settings?
   socialAccounts SocialAccount[]
+  templates      Template[]
 }
 
-// Post model for content management
 model Post {
-  id            String    @id @default(cuid())
-  title         String
-  content       String    @db.Text
-  formattedContent String? @db.Text
-  status        PostStatus @default(DRAFT)
-  imageUrl      String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  publishedAt   DateTime?
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  templateId    String?
-  template      Template? @relation(fields: [templateId], references: [id])
-  socialPosts   SocialPost[]
+  id               String         @id @default(cuid())
+  title            String
+  content          String
+  formattedContent String?
+  status           PostStatus     @default(DRAFT)
+  imageUrl         String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  publishedAt      DateTime?
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postTemplates    PostTemplate[]
+  socialPosts      SocialPost[]
 }
 
-// Template model for content formatting
 model Template {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String
   description   String?
-  content       String    @db.Text
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  posts         Post[]
-  isDefault     Boolean   @default(false)
-}
-
-// Settings model for user preferences
-model Settings {
-  id            String    @id @default(cuid())
-  userId        String    @unique
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  theme         Theme     @default(DARK)
-  notifications Boolean   @default(true)
-  defaultTemplateId String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-}
-
-// Social media account connections
-model SocialAccount {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isDefault     Boolean        @default(false)
   platform      Platform
-  accessToken   String
-  refreshToken  String?
+  prompt        String
+  postTemplates PostTemplate[]
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform, name])
+}
+
+model PostTemplate {
+  id               String   @id @default(cuid())
+  postId           String
+  templateId       String
+  platform         Platform
+  generatedContent String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  post             Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  template         Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, platform])
+}
+
+model Settings {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  theme             Theme    @default(DARK)
+  notifications     Boolean  @default(true)
+  defaultTemplateId String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SocialAccount {
+  id             String       @id @default(cuid())
+  userId         String
+  platform       Platform
+  accessToken    String
+  refreshToken   String?
   tokenExpiresAt DateTime?
   platformUserId String
-  username      String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  socialPosts   SocialPost[]
+  username       String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socialPosts    SocialPost[]
 
   @@unique([userId, platform])
 }
 
-// Social media posts
 model SocialPost {
-  id            String    @id @default(cuid())
-  postId        String
-  post          Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  id              String           @id @default(cuid())
+  postId          String
   socialAccountId String
-  socialAccount SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
-  platformPostId String?
-  status        SocialPostStatus @default(PENDING)
-  publishedAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  platformPostId  String?
+  status          SocialPostStatus @default(PENDING)
+  publishedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  post            Post             @relation(fields: [postId], references: [id], onDelete: Cascade)
+  socialAccount   SocialAccount    @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
 
   @@unique([postId, socialAccountId])
 }
 
-// Enums
 enum PostStatus {
   DRAFT
   PENDING
